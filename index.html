@@ -8,16 +8,18 @@
   <link href="https://unpkg.com/video.js/dist/video-js.min.css" rel="stylesheet" />
   <script src="https://unpkg.com/video.js/dist/video.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-quality-levels@latest/dist/videojs-contrib-quality-levels.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@latest/dist/videojs-hls-quality-selector.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     html, body {
       height: 100%;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -228,7 +230,20 @@
       padding: 8px 16px;
       height: 50px;
       display: flex !important;
-      align-items: center; /* Center controls vertically */
+      align-items: center;
+      justify-content: flex-start;
+      z-index: 3500;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+
+    .vjs-theme-modern.vjs-user-inactive .vjs-control-bar {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .vjs-theme-modern.vjs-user-active .vjs-control-bar {
+      opacity: 1;
     }
 
     .vjs-theme-modern .vjs-big-play-button {
@@ -240,6 +255,7 @@
       font-size: 2.5rem;
       backdrop-filter: blur(10px);
       transition: all 0.3s ease;
+      z-index: 3500;
     }
 
     .vjs-theme-modern .vjs-big-play-button:hover {
@@ -248,35 +264,38 @@
     }
 
     /* Controles visíveis */
+    .vjs-theme-modern .vjs-play-control,
     .vjs-theme-modern .vjs-volume-panel,
     .vjs-theme-modern .vjs-current-time,
-    .vjs-theme-modern .vjs-progress-control {
+    .vjs-theme-modern .vjs-progress-control,
+    .vjs-theme-modern .vjs-quality-selector {
       display: flex !important;
       color: white;
-      align-items: center; /* Ensure individual controls are centered */
+      align-items: center;
+      height: 100%;
+      z-index: 3500;
     }
 
-    /* Hide play/pause button */
     .vjs-theme-modern .vjs-play-control {
-      display: none !important;
+      order: 1;
+      margin-right: 12px;
     }
 
     .vjs-theme-modern .vjs-volume-panel {
-      order: 1;
+      order: 2;
       margin-right: 12px;
       display: flex;
-      flex-direction: column-reverse; /* Reverse to put volume bar above mute button */
+      flex-direction: row;
       align-items: center;
       justify-content: center;
     }
 
     .vjs-theme-modern .vjs-volume-control {
-      transform: rotate(-90deg); /* Keep vertical, pointing up */
-      width: 80px; /* Length of the vertical slider */
-      height: 4px; /* Thickness of the slider */
+      width: 80px;
+      height: 4px;
       background: rgba(255, 255, 255, 0.1);
       border-radius: 2px;
-      margin-bottom: 30px; /* Space below volume bar for mute button */
+      margin-left: 8px;
     }
 
     .vjs-theme-modern .vjs-volume-bar {
@@ -290,7 +309,7 @@
     }
 
     .vjs-theme-modern .vjs-progress-control {
-      order: 2;
+      order: 3;
       flex: 1;
       margin: 0 12px;
     }
@@ -307,8 +326,13 @@
     }
 
     .vjs-theme-modern .vjs-current-time {
-      order: 3;
+      order: 4;
       font-size: 0.9rem;
+      margin-left: 12px;
+    }
+
+    .vjs-theme-modern .vjs-quality-selector {
+      order: 5;
       margin-left: 12px;
     }
 
@@ -364,16 +388,18 @@
       position: absolute;
       top: 16px;
       left: 16px;
-      z-index: 1000;
+      z-index: 3600;
       transition: opacity 0.3s ease;
+      pointer-events: auto;
     }
 
     .channel-info-overlay.hidden {
       opacity: 0;
       pointer-events: none;
+      display: none;
     }
 
-    /* Floating close button (square with rounded corners) */
+    /* Floating close button */
     .close-btn-overlay {
       background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(10px);
@@ -386,18 +412,48 @@
       position: absolute;
       top: 16px;
       right: 16px;
-      z-index: 1000;
+      z-index: 3600;
       transition: opacity 0.3s ease, background 0.3s ease;
       cursor: pointer;
+      pointer-events: auto;
     }
 
     .close-btn-overlay.hidden {
       opacity: 0;
       pointer-events: none;
+      display: none;
     }
 
     .close-btn-overlay:hover {
       background: rgba(255, 68, 68, 0.7);
+    }
+
+    /* Rotate prompt overlay */
+    .rotate-prompt {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 20px;
+      color: white;
+      text-align: center;
+      z-index: 2000;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .rotate-prompt.visible {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .rotate-prompt i {
+      font-size: 2rem;
+      margin-bottom: 10px;
     }
 
     /* Responsive */
@@ -406,11 +462,11 @@
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 16px;
       }
-      
+
       .channel-card {
         padding: 16px;
       }
-      
+
       .channel-logo {
         width: 56px;
         height: 56px;
@@ -420,6 +476,7 @@
         top: 12px;
         left: 12px;
         padding: 10px;
+        z-index: 3600;
       }
 
       .close-btn-overlay {
@@ -428,6 +485,7 @@
         width: 36px;
         height: 36px;
         border-radius: 8px;
+        z-index: 3600;
       }
 
       .close-btn-overlay i {
@@ -437,15 +495,23 @@
       .vjs-theme-modern .vjs-control-bar {
         padding: 6px 12px;
         height: 40px;
+        z-index: 3500;
+      }
+
+      .vjs-theme-modern .vjs-play-control {
+        margin-right: 8px;
       }
 
       .vjs-theme-modern .vjs-volume-panel {
         margin-right: 8px;
+        flex-direction: row;
+        align-items: center;
       }
 
       .vjs-theme-modern .vjs-volume-control {
-        width: 60px; /* Shorter for mobile */
-        margin-bottom: 24px; /* Adjust for mute button below */
+        width: 60px;
+        height: 4px;
+        margin-left: 6px;
       }
 
       .vjs-theme-modern .vjs-current-time {
@@ -455,6 +521,30 @@
 
       .vjs-theme-modern .vjs-progress-control {
         margin: 0 8px;
+      }
+
+      .vjs-theme-modern .vjs-quality-selector {
+        margin-left: 8px;
+      }
+
+      @media (orientation: portrait) {
+        .rotate-prompt {
+          visibility: visible;
+          opacity: 1;
+        }
+        .video-js.vjs-theme-modern {
+          height: 50vh; /* Reduced height in portrait to show prompt */
+        }
+      }
+
+      @media (orientation: landscape) {
+        .rotate-prompt {
+          visibility: hidden;
+          opacity: 0;
+        }
+        .video-js.vjs-theme-modern {
+          height: 100vh; /* Full height in landscape */
+        }
       }
     }
 
@@ -496,7 +586,6 @@
   </style>
 </head>
 <body>
-
   <!-- Som -->
   <audio id="clickSound" src="https://cdn.pixabay.com/audio/2025/06/01/audio_d2ccbb367a.mp3" preload="auto"></audio>
 
@@ -506,7 +595,6 @@
   <!-- Header moderno -->
   <header class="header-glass sticky top-0 z-40 px-6 py-4">
     <div class="max-w-7xl mx-auto">
-      <!-- Logo -->
       <div class="text-center mb-6">
         <div class="mt-2">
           <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -515,8 +603,7 @@
           <p class="text-gray-400 text-sm">TV Brasileira Premium</p>
         </div>
       </div>
-      
-      <!-- Search -->
+
       <div class="search-container">
         <div class="relative">
           <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
@@ -547,8 +634,14 @@
           <i class="fas fa-tv"></i>
           Abertos
         </button>
-        <button class="category-btn bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2" onclick="setCategory('noticias')">
+        <button class="category-btn bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2" onclick="setCategory('variedades')">
+
+          <i class="fa-solid fa-puzzle-piece"></i>
+            Variedades
+          </button>
+          <button class="category-btn bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2" onclick="setCategory('noticias')">
           <i class="fas fa-newspaper"></i>
+            
           Notícias
         </button>
         <button class="category-btn bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2" onclick="setCategory('esportes')">
@@ -575,8 +668,7 @@
   <main class="px-6 py-8">
     <div class="max-w-7xl mx-auto">
       <div id="channelList" class="channel-grid">
-        <!-- Canais Abertos -->
-        <div class="channel-card offline" data-name="globosp" data-category="abertos" data-url="https://02.xn--l8jyc6ar9fx162a.site/globosp/tracks-v1a1/mono.m3u8?remote=no_check_ip&token=9046bb894563462029605f588e5498d11032802d-bddb7a6e5a9d2c7a2857c06b503ab7f1-1756909619-1756906019">
+        <div class="channel-card offline" data-name="globosp" data-category="abertos" data-url="https://01.xn--l8jyc6ar9fx162a.site/globosp/tracks-v1a1/mono.m3u8?remote=no_check_ip&token=56c2227d0eeef82375333bb15cc6173691baea28-df939a2abe2141287e9472ed9cb93319-1756982909-1756979309">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -584,8 +676,7 @@
           <img src="https://i.imgur.com/aYKmlmc.png" class="channel-logo" />
           <div class="channel-name">Globo SP</div>
         </div>
-
-        <div class="channel-card offline" data-name="globorj" data-category="abertos" data-url="https://aipapai.shop/_temp/globorj.m3u8">
+        <div class="channel-card offline" data-name="globorj" data-category="abertos" data-url="https://01.xn--l8jyc6ar9fx162a.site/globosp/tracks-v1a1/mono.m3u8?remote=no_check_ip&token=56c2227d0eeef82375333bb15cc6173691baea28-df939a2abe2141287e9472ed9cb93319-1756982909-1756979309">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -593,8 +684,7 @@
           <img src="https://i.imgur.com/aYKmlmc.png" class="channel-logo" />
           <div class="channel-name">Globo RJ</div>
         </div>
-
-        <div class="channel-card" data-name="cultura" data-category="abertos" data-url="https://player-tvcultura.stream.uol.com.br/live/tvcultura_lsd.m3u8?vhost=player-tvcultura.stream.uol.com.br">
+        <div class="channel-card offline" data-name="tv cultura" data-category="abertos" data-url="https://player-tvcultura.stream.uol.com.br/live/tvcultura_lsd.m3u8?vhost=player-tvcultura.stream.uol.com.br">
           <div class="live-indicator online">
             <span class="online-text" style="display: inline;">AO VIVO</span>
             <span class="offline-text" style="display: none;">OFFLINE</span>
@@ -602,7 +692,14 @@
           <img src="https://i.imgur.com/PJLJzdW.png" class="channel-logo" />
           <div class="channel-name">TV Cultura</div>
         </div>
-
+        <div class="channel-card offline" data-name="tv brasil" data-category="abertos" data-url="https://tvbrasil-stream.ebc.com.br/EBC_HD-avc1_1800000=10001.m3u8">
+          <div class="live-indicator online">
+            <span class="online-text" style="display: inline;">AO VIVO</span>
+            <span class="offline-text" style="display: none;">OFFLINE</span>
+          </div>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/TV_Brasil_logo_2019.svg" class="channel-logo" />
+          <div class="channel-name">TV Brasil</div>
+        </div>
         <div class="channel-card offline" data-name="record" data-category="abertos" data-url="https://aipapai.shop/_temp/record.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -611,8 +708,7 @@
           <img src="https://i.imgur.com/SehYFaG.png" class="channel-logo" />
           <div class="channel-name">Record</div>
         </div>
-
-        <div class="channel-card offline" data-name="redetv" data-category="abertos" data-url="https://aipapai.shop/_temp/redetv.m3u8">
+        <div class="channel-card offline" data-name="redetv" data-category="abertos" data-url="https://video04.logicahost.com.br/tvpampa/tvpampa/chunklist_w2086641684.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -620,7 +716,6 @@
           <img src="https://i.imgur.com/uKSf0kb.png" class="channel-logo" />
           <div class="channel-name">RedeTV!</div>
         </div>
-
         <div class="channel-card offline" data-name="sbt" data-category="abertos" data-url="https://aipapai.shop/_temp/sbt.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -629,7 +724,6 @@
           <img src="https://i.imgur.com/Orcyltp.png" class="channel-logo" />
           <div class="channel-name">SBT</div>
         </div>
-
         <div class="channel-card offline" data-name="band" data-category="abertos" data-url="https://aipapai.shop/_temp/band.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -638,8 +732,6 @@
           <img src="https://i.imgur.com/QZgrKOf.png" class="channel-logo" />
           <div class="channel-name">Band</div>
         </div>
-
-        <!-- Canais de Notícias -->
         <div class="channel-card offline" data-name="cnn brasil" data-category="noticias" data-url="https://aipapai.shop/_temp/cnnbrasil.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -648,7 +740,6 @@
           <img src="https://i.imgur.com/sKwH2u4.png" class="channel-logo" />
           <div class="channel-name">CNN Brasil</div>
         </div>
-
         <div class="channel-card offline" data-name="globo news" data-category="noticias" data-url="https://aipapai.shop/_temp/globonews.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -657,7 +748,6 @@
           <img src="https://i.imgur.com/CCEg0km.png" class="channel-logo" />
           <div class="channel-name">Globo News</div>
         </div>
-
         <div class="channel-card offline" data-name="band news" data-category="noticias" data-url="https://aipapai.shop/_temp/bandnews.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -666,8 +756,7 @@
           <img src="https://i.imgur.com/uzNyEV4.png" class="channel-logo" />
           <div class="channel-name">Band News</div>
         </div>
-
-        <div class="channel-card offline" data-name="record news" data-category="noticias" data-url="https://aipapai.shop/_temp/recordnews.m3u8">
+        <div class="channel-card offline" data-name="record news" data-category="noticias" data-url="https://run-rnw-rn.otteravision.com/rnw/rn/rnw_rn_720p_high.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -675,8 +764,6 @@
           <img src="https://i.imgur.com/OlccJ9t.png" class="channel-logo" />
           <div class="channel-name">Record News</div>
         </div>
-
-        <!-- Canais de Esportes -->
         <div class="channel-card offline" data-name="sportv" data-category="esportes" data-url="https://aipapai.shop/_temp/sportv.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -685,7 +772,6 @@
           <img src="https://i.imgur.com/IwO9fQL.png" class="channel-logo" />
           <div class="channel-name">Sportv</div>
         </div>
-
         <div class="channel-card offline" data-name="sportv 2" data-category="esportes" data-url="https://aipapai.shop/_temp/sportv2.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -694,7 +780,6 @@
           <img src="https://i.imgur.com/Aln0pjU.png" class="channel-logo" />
           <div class="channel-name">Sportv 2</div>
         </div>
-
         <div class="channel-card offline" data-name="sportv3" data-category="esportes" data-url="https://aipapai.shop/_temp/sportv3.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -703,7 +788,6 @@
           <img src="https://i.imgur.com/FaVJDPa.png" class="channel-logo" />
           <div class="channel-name">Sportv 3</div>
         </div>
-
         <div class="channel-card offline" data-name="sportv 4" data-category="esportes" data-url="https://aipapai.shop/_temp/sportv4.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -712,7 +796,6 @@
           <img src="https://i.imgur.com/IwO9fQL.png" class="channel-logo" />
           <div class="channel-name">Sportv 4</div>
         </div>
-
         <div class="channel-card offline" data-name="espn" data-category="esportes" data-url="https://aipapai.shop/_temp/espn.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -721,7 +804,6 @@
           <img src="https://i.imgur.com/AUdOPW0.png" class="channel-logo" />
           <div class="channel-name">ESPN</div>
         </div>
-
         <div class="channel-card offline" data-name="espn2" data-category="esportes" data-url="https://aipapai.shop/_temp/espn2.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -730,7 +812,6 @@
           <img src="https://i.imgur.com/s2YAxM9.png" class="channel-logo" />
           <div class="channel-name">ESPN 2</div>
         </div>
-
         <div class="channel-card offline" data-name="espn3" data-category="esportes" data-url="https://aipapai.shop/_temp/espn3.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -739,7 +820,6 @@
           <img src="https://i.imgur.com/zctUday.png" class="channel-logo" />
           <div class="channel-name">ESPN 3</div>
         </div>
-
         <div class="channel-card offline" data-name="espn4" data-category="esportes" data-url="https://aipapai.shop/_temp/espn4.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -748,7 +828,6 @@
           <img src="https://i.imgur.com/k3iSdJx.png" class="channel-logo" />
           <div class="channel-name">ESPN 4</div>
         </div>
-
         <div class="channel-card offline" data-name="espn5" data-category="esportes" data-url="https://aipapai.shop/_temp/espn5.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -757,7 +836,6 @@
           <img src="https://i.imgur.com/7YScj1R.png" class="channel-logo" />
           <div class="channel-name">ESPN 5</div>
         </div>
-
         <div class="channel-card offline" data-name="espn6" data-category="esportes" data-url="https://aipapai.shop/_temp/espn6.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -766,7 +844,6 @@
           <img src="https://i.imgur.com/dtWJKS6.png" class="channel-logo" />
           <div class="channel-name">ESPN 6</div>
         </div>
-
         <div class="channel-card offline" data-name="premiere" data-category="esportes" data-url="https://aipapai.shop/_temp/premiere.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -775,7 +852,6 @@
           <img src="https://i.imgur.com/ydDYQhX.png" class="channel-logo" />
           <div class="channel-name">Premiere</div>
         </div>
-
         <div class="channel-card offline" data-name="premiere2" data-category="esportes" data-url="https://aipapai.shop/_temp/premiere2.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -784,7 +860,6 @@
           <img src="https://i.imgur.com/ydDYQhX.png" class="channel-logo" />
           <div class="channel-name">Premiere 2</div>
         </div>
-
         <div class="channel-card offline" data-name="premiere3" data-category="esportes" data-url="https://aipapai.shop/_temp/premiere3.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -793,7 +868,6 @@
           <img src="https://i.imgur.com/ydDYQhX.png" class="channel-logo" />
           <div class="channel-name">Premiere 3</div>
         </div>
-
         <div class="channel-card offline" data-name="premiere4" data-category="esportes" data-url="https://aipapai.shop/_temp/premiere4.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -802,7 +876,6 @@
           <img src="https://i.imgur.com/ydDYQhX.png" class="channel-logo" />
           <div class="channel-name">Premiere 4</div>
         </div>
-
         <div class="channel-card offline" data-name="premiere5" data-category="esportes" data-url="https://aipapai.shop/_temp/premiere5.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -811,7 +884,6 @@
           <img src="https://i.imgur.com/ydDYQhX.png" class="channel-logo" />
           <div class="channel-name">Premiere 5</div>
         </div>
-
         <div class="channel-card offline" data-name="premiere6" data-category="esportes" data-url="https://aipapai.shop/_temp/premiere6.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -820,7 +892,6 @@
           <img src="https://i.imgur.com/ydDYQhX.png" class="channel-logo" />
           <div class="channel-name">Premiere 6</div>
         </div>
-
         <div class="channel-card offline" data-name="premiere7" data-category="esportes" data-url="https://aipapai.shop/_temp/premiere7.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -829,7 +900,6 @@
           <img src="https://i.imgur.com/ydDYQhX.png" class="channel-logo" />
           <div class="channel-name">Premiere 7</div>
         </div>
-
         <div class="channel-card offline" data-name="premiere8" data-category="esportes" data-url="https://aipapai.shop/_temp/premiere8.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -838,8 +908,6 @@
           <img src="https://i.imgur.com/ydDYQhX.png" class="channel-logo" />
           <div class="channel-name">Premiere 8</div>
         </div>
-
-        <!-- Canais de Filmes (exemplos) -->
         <div class="channel-card offline" data-name="telecine" data-category="filmes" data-url="https://aipapai.shop/_temp/telecine.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -848,8 +916,6 @@
           <img src="https://via.placeholder.com/64x64/667eea/ffffff?text=TC" class="channel-logo" />
           <div class="channel-name">Telecine</div>
         </div>
-
-        <!-- Canais de Desenhos (exemplos) -->
         <div class="channel-card offline" data-name="cartoon network" data-category="desenhos" data-url="https://aipapai.shop/_temp/cartoon.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -858,8 +924,14 @@
           <img src="https://via.placeholder.com/64x64/ff6b6b/ffffff?text=CN" class="channel-logo" />
           <div class="channel-name">Cartoon Network</div>
         </div>
-
-        <!-- Canais de Documentários (exemplos) -->
+        <div class="channel-card offline" data-name="loading" data-category="variedades" data-url="https://stmv1.srvif.com/loadingtv/loadingtv/playlist.m3u8?hls_ctx=5903w135">
+          <div class="live-indicator offline">
+            <span class="online-text" style="display: none;">AO VIVO</span>
+            <span class="offline-text" style="display: inline;">OFFLINE</span>
+          </div>
+          <img src="https://agenciauva.net/wp-content/uploads/2020/12/logo_loading_preto.png?w=1320&h=388&crop=1" class="channel-logo" />
+          <div class="channel-name">Loading</div>
+        </div>
         <div class="channel-card offline" data-name="discovery" data-category="documentarios" data-url="https://aipapai.shop/_temp/discovery.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
@@ -874,7 +946,6 @@
 
   <!-- Player Overlay -->
   <div id="playerOverlay" class="player-overlay fixed inset-0 z-50 opacity-0 pointer-events-none transition-all duration-300">
-    <!-- Channel info overlay -->
     <div id="channelInfoOverlay" class="channel-info-overlay hidden">
       <div class="flex items-center gap-3">
         <img id="overlayChannelLogo" src="" class="w-10 h-10 rounded-lg object-contain" />
@@ -887,14 +958,17 @@
         </div>
       </div>
     </div>
-    
-    <!-- Floating close button -->
+
     <button id="closeBtnOverlay" onclick="closePlayer()" class="close-btn-overlay hidden">
       <i class="fas fa-times text-lg text-white"></i>
     </button>
-    
+
+    <div id="rotatePrompt" class="rotate-prompt">
+      <i class="fas fa-mobile-alt fa-rotate-90"></i>
+      <p>Por favor, gire o dispositivo para a horizontal</p>
+    </div>
+
     <div class="relative h-full" id="videoContainer">
-      <!-- Player will be dynamically created here -->
     </div>
   </div>
 
@@ -907,8 +981,8 @@
     let notificationTimeout = null;
     let channelStatus = new Map();
     let statusCheckInterval = null;
+    let isOrientationLocked = false;
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
       if (e.ctrlKey && e.key === 'k') {
         e.preventDefault();
@@ -919,19 +993,30 @@
       }
     });
 
-    // Initialize
     document.addEventListener('DOMContentLoaded', function() {
       filterChannels();
       setupChannelAnimations();
-      checkChannelStatus();
-      startStatusCheckInterval();
+      checkChannelStatus(); // Run status check once on page load
       setupChannelClickListeners();
-      
-      // Cleanup on page unload
+
+      window.addEventListener('orientationchange', updateOrientationPrompt);
+
+      // Handle browser back button
+      window.addEventListener('popstate', function(e) {
+        if (player) {
+          e.preventDefault();
+          closePlayer();
+        }
+      });
+
       window.addEventListener('beforeunload', function() {
+        hideOverlays();
         cleanupPlayer();
         stopStatusCheckInterval();
       });
+
+      // Initial orientation check
+      updateOrientationPrompt();
     });
 
     function setupChannelAnimations() {
@@ -955,59 +1040,49 @@
 
     async function checkChannelStatus() {
       const channels = document.querySelectorAll('.channel-card[data-url]');
-      
+
       for (let channel of channels) {
         const url = channel.dataset.url;
         const name = channel.dataset.name;
         let isOnline = false;
-        
-        // Try up to 2 attempts
-        for (let attempt = 1; attempt <= 2; attempt++) {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
-            
-            const response = await fetch(url, {
-              method: 'GET',
-              mode: 'cors',
-              cache: 'no-cache',
-              signal: controller.signal,
-              headers: {
-                'Range': 'bytes=0-1023' // Request only the first 1KB to minimize bandwidth
-              }
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (response.ok) {
-              // Check if the response contains valid HLS content
-              const contentType = response.headers.get('content-type') || '';
-              if (contentType.includes('application/vnd.apple.mpegurl') || contentType.includes('application/x-mpegURL')) {
-                isOnline = true;
-                break; // Exit retry loop on success
-              }
+
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+          const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache',
+            signal: controller.signal,
+            headers: {
+              'Range': 'bytes=0-1023'
             }
-            
-            // Wait 1 second before retrying
-            if (attempt < 2) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          } catch (error) {
-            console.warn(`Status check failed for ${name} (attempt ${attempt}):`, error);
-            if (attempt === 2) {
-              isOnline = false;
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/vnd.apple.mpegurl') || contentType.includes('application/x-mpegURL')) {
+              isOnline = true;
             }
           }
+        } catch (error) {
+          // Suppress all errors to keep console clean
+          // Only log critical unexpected errors
+          if (error.name !== 'AbortError' && error.message !== 'Failed to fetch') {
+            console.error(`Critical error checking status for ${name}:`, error);
+          }
         }
-        
+
         setChannelStatus(channel, isOnline);
         channelStatus.set(name, isOnline);
       }
     }
 
     function startStatusCheckInterval() {
-      checkChannelStatus(); // Run immediately
-      statusCheckInterval = setInterval(checkChannelStatus, 30000); // Then every 30 seconds
+      // No periodic checks; function kept for compatibility
     }
 
     function stopStatusCheckInterval() {
@@ -1021,7 +1096,7 @@
       const indicator = channelElement.querySelector('.live-indicator');
       const onlineText = indicator.querySelector('.online-text');
       const offlineText = indicator.querySelector('.offline-text');
-      
+
       if (isOnline) {
         channelElement.classList.remove('offline');
         indicator.classList.add('online');
@@ -1037,12 +1112,90 @@
       }
     }
 
+    function lockOrientationToLandscape() {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (!isMobile) return;
+
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').then(() => {
+          isOrientationLocked = true;
+          console.log('Screen locked to landscape');
+          updateOrientationPrompt();
+        }).catch(err => {
+          console.warn('Failed to lock orientation:', err);
+          showNotification('Por favor, gire o dispositivo para a horizontal', 'info');
+          updateOrientationPrompt();
+        });
+      } else {
+        console.warn('Screen orientation lock not supported');
+        showNotification('Por favor, gire o dispositivo para a horizontal', 'info');
+        updateOrientationPrompt();
+      }
+    }
+
+    function unlockOrientation() {
+      if (isOrientationLocked && screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+        isOrientationLocked = false;
+        console.log('Screen orientation unlocked');
+      }
+      hideRotatePrompt();
+    }
+
+    function showRotatePrompt() {
+      const rotatePrompt = document.getElementById('rotatePrompt');
+      if (rotatePrompt) {
+        rotatePrompt.classList.add('visible');
+        console.log('Showing rotate prompt');
+      }
+    }
+
+    function hideRotatePrompt() {
+      const rotatePrompt = document.getElementById('rotatePrompt');
+      if (rotatePrompt) {
+        rotatePrompt.classList.remove('visible');
+        console.log('Hiding rotate prompt');
+      }
+    }
+
+    function updateOrientationPrompt() {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (!isMobile || !player) {
+        hideRotatePrompt();
+        return;
+      }
+
+      const isLandscape = window.matchMedia("(orientation: landscape)").matches;
+      if (isLandscape) {
+        hideRotatePrompt();
+      } else {
+        showRotatePrompt();
+      }
+    }
+
+    function hideOverlays() {
+      const channelOverlay = document.getElementById('channelInfoOverlay');
+      const closeBtnOverlay = document.getElementById('closeBtnOverlay');
+      if (channelOverlay) {
+        channelOverlay.classList.add('hidden');
+        channelOverlay.style.display = 'none';
+      }
+      if (closeBtnOverlay) {
+        closeBtnOverlay.classList.add('hidden');
+        closeBtnOverlay.style.display = 'none';
+      }
+      if (overlayTimeout) {
+        clearTimeout(overlayTimeout);
+        overlayTimeout = null;
+      }
+    }
+
     function playChannel(url, name, logo) {
       try {
         playClickSound();
-        
+
         cleanupPlayer();
-        
+
         const overlay = document.getElementById('playerOverlay');
         overlay.classList.remove('opacity-0', 'pointer-events-none');
         overlay.classList.add('opacity-100', 'pointer-events-auto');
@@ -1050,37 +1203,31 @@
         document.getElementById('overlayChannelName').textContent = name;
         document.getElementById('overlayChannelLogo').src = logo;
 
-        setTimeout(() => {
-          initializePlayer(url, name);
+        history.pushState({ playerOpen: true }, '', '');
+
+        initializePlayer(url, name).then(() => {
           showChannelInfo();
-        }, 100);
+          lockOrientationToLandscape();
+          updateOrientationPrompt();
+          if (player) player.userActive(true);
+        });
 
       } catch (error) {
         console.error('Error playing channel:', error);
         showNotification('Canal indisponível no momento', 'error');
+        closePlayer();
       }
     }
 
     function cleanupPlayer() {
-      if (overlayTimeout) {
-        clearTimeout(overlayTimeout);
-        overlayTimeout = null;
-      }
-      
+      hideOverlays();
+
       if (notificationTimeout) {
         clearTimeout(notificationTimeout);
         notificationTimeout = null;
       }
 
-      const channelOverlay = document.getElementById('channelInfoOverlay');
-      if (channelOverlay) {
-        channelOverlay.classList.add('hidden');
-      }
-
-      const closeBtnOverlay = document.getElementById('closeBtnOverlay');
-      if (closeBtnOverlay) {
-        closeBtnOverlay.classList.add('hidden');
-      }
+      hideRotatePrompt();
 
       if (window.currentHls) {
         try {
@@ -1088,11 +1235,11 @@
           window.currentHls.detachMedia();
           window.currentHls.destroy();
         } catch (e) {
-          console.log('HLS cleanup error:', e);
+          console.error('HLS cleanup error:', e);
         }
         window.currentHls = null;
       }
-      
+
       if (player) {
         try {
           const videoElement = player.tech(true);
@@ -1101,11 +1248,11 @@
             videoElement.el_.src = '';
             videoElement.el_.load();
           }
-          
+
           player.pause();
           player.dispose();
         } catch (e) {
-          console.log('Player cleanup error:', e);
+          console.error('Player cleanup error:', e);
         }
         player = null;
       }
@@ -1118,7 +1265,7 @@
               players[playerId].pause();
               players[playerId].dispose();
             } catch (e) {
-              console.log('Force cleanup error:', e);
+              console.error('Force cleanup error:', e);
             }
           }
         });
@@ -1138,12 +1285,14 @@
             element.load();
           }
         } catch (e) {
-          console.log('Audio cleanup error:', e);
+          console.error('Audio cleanup error:', e);
         }
       });
+
+      unlockOrientation();
     }
 
-    function initializePlayer(url, channelName) {
+    async function initializePlayer(url, channelName) {
       try {
         const videoContainer = document.getElementById('videoContainer');
         if (!videoContainer) {
@@ -1153,48 +1302,64 @@
         const uniqueId = 'videoPlayer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         const videoWrapper = document.createElement('div');
         videoWrapper.className = 'video-wrapper w-full h-full';
-        
+
         const newVideoElement = document.createElement('video-js');
         newVideoElement.id = uniqueId;
         newVideoElement.className = 'vjs-theme-modern video-js vjs-default-skin w-full h-full';
         newVideoElement.setAttribute('controls', '');
         newVideoElement.setAttribute('preload', 'auto');
         newVideoElement.setAttribute('data-setup', '{}');
-        
+
         newVideoElement.innerHTML = `
           <p class="vjs-no-js">
             Para assistir este vídeo, você precisa ativar o JavaScript, e considere fazer upgrade para um navegador web
             <a href="https://videojs.com/html5-video-support/" target="_blank">que suporte vídeos HTML5</a>.
           </p>
         `;
-        
+
         videoWrapper.appendChild(newVideoElement);
         videoContainer.appendChild(videoWrapper);
 
-        setTimeout(() => {
-          player = videojs(uniqueId, {
-            controls: true,
-            fluid: true,
-            responsive: true,
-            techOrder: ['html5'],
-            html5: {
-              vhs: {
-                overrideNative: true
-              }
-            },
-            sources: [],
-            aspectRatio: '16:9',
-            controlBar: {
-              pictureInPictureToggle: false
+        player = videojs(uniqueId, {
+          controls: true,
+          fluid: true,
+          responsive: true,
+          techOrder: ['html5'],
+          html5: {
+            vhs: {
+              overrideNative: true
             }
-          });
+          },
+          sources: [],
+          aspectRatio: '16:9',
+          controlBar: {
+            pictureInPictureToggle: false,
+            volumePanel: { inline: true },
+            currentTimeDisplay: true,
+            timeDivider: false,
+            durationDisplay: false,
+            progressControl: true,
+            qualitySelector: true
+          },
+          userActions: {
+            hotkeys: true,
+            doubleClick: false
+          },
+          inactivityTimeout: 7000
+        });
 
+        await new Promise(resolve => {
           player.ready(() => {
             if (Hls.isSupported()) {
               window.currentHls = new Hls({
-                enableWorker: false,
+                enableWorker: true,
                 lowLatencyMode: false,
                 maxBufferLength: 30,
+                startLevel: -1,
+                autoLevelEnabled: true,
+                abrEwmaFastLive: 3.0,
+                abrEwmaSlowLive: 9.0,
+                abrEwmaDefaultEstimate: 5000000,
                 manifestLoadingTimeOut: 20000,
                 manifestLoadingMaxRetry: 3,
                 levelLoadingTimeOut: 15000,
@@ -1206,41 +1371,45 @@
                   xhr.timeout = 15000;
                 }
               });
-              
+
               window.currentHls.loadSource(url);
               window.currentHls.attachMedia(player.tech().el());
-              
+
               window.currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
                 console.log('Stream ready, starting playback');
                 setChannelStatusByName(channelName, true);
-                
-                setTimeout(() => {
-                  player.play().catch(e => {
-                    console.log('Autoplay prevented, user interaction required:', e);
-                    showNotification('Clique na tela para iniciar', 'info');
-                  });
-                }, 500);
+
+                player.hlsQualitySelector({
+                  displayCurrentQuality: true
+                });
+
+                player.play().catch(e => {
+                  console.log('Autoplay prevented, user interaction required:', e);
+                  showNotification('Clique na tela para iniciar', 'info');
+                });
+
+                showChannelInfo();
+                player.userActive(true);
+                updateOrientationPrompt();
               });
 
               window.currentHls.on(Hls.Events.ERROR, function(event, data) {
                 console.error('HLS Error:', data);
                 if (data.fatal) {
                   setChannelStatusByName(channelName, false);
-                  
+
                   switch(data.type) {
                     case Hls.ErrorTypes.NETWORK_ERROR:
-                      console.log('Network error, attempting recovery...');
                       showNotification('Erro de conexão - Canal offline', 'error');
                       break;
                     case Hls.ErrorTypes.MEDIA_ERROR:
-                      console.log('Media error, attempting recovery...');
                       showNotification('Erro de mídia - Canal offline', 'error');
                       break;
                     default:
                       showNotification('Canal indisponível no momento', 'error');
                       break;
                   }
-                  
+
                   setTimeout(() => {
                     closePlayer();
                   }, 2000);
@@ -1251,18 +1420,25 @@
                 showNotification('Carregando canal...', 'info');
               });
 
+              window.currentHls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
+                const level = window.currentHls.levels[data.level];
+                console.log(`Switched to quality level: ${level.height}p, bitrate: ${level.bitrate}`);
+              });
+
             } else if (player.tech().el().canPlayType('application/vnd.apple.mpegurl')) {
               player.src({
                 src: url,
                 type: 'application/x-mpegURL'
               });
-              
-              setTimeout(() => {
-                player.play().catch(e => {
-                  console.log('Autoplay prevented:', e);
-                  showNotification('Clique na tela para iniciar', 'info');
-                });
-              }, 500);
+
+              player.play().catch(e => {
+                console.log('Autoplay prevented:', e);
+                showNotification('Clique na tela para iniciar', 'info');
+              });
+
+              showChannelInfo();
+              player.userActive(true);
+              updateOrientationPrompt();
             } else {
               showNotification('Navegador não suporta streaming HLS', 'error');
             }
@@ -1277,6 +1453,8 @@
               console.log('Channel loaded successfully');
               setChannelStatusByName(channelName, true);
               showNotification('Canal carregado com sucesso', 'success');
+              showChannelInfo();
+              player.userActive(true);
             });
 
             player.on('waiting', function() {
@@ -1286,25 +1464,35 @@
             player.on('loadstart', function() {
               showNotification('Iniciando carregamento...', 'info');
             });
-            
-            videoWrapper.addEventListener('click', function(e) {
-              if (e.target === videoWrapper || e.target.tagName === 'VIDEO' || e.target.classList.contains('vjs-tech')) {
-                showChannelInfo();
-              }
-            });
-          });
 
-        }, 300);
+            const showControls = (event) => {
+              if (event.target.id === 'closeBtnOverlay') return;
+              toggleChannelInfo();
+              if (player) {
+                player.userActive(true);
+                console.log('Controls shown via user interaction');
+              }
+            };
+
+            videoWrapper.addEventListener('click', showControls);
+            videoWrapper.addEventListener('touchstart', showControls);
+            videoWrapper.addEventListener('touchend', showControls);
+            videoWrapper.addEventListener('mousemove', showControls);
+
+            resolve();
+          });
+        });
 
       } catch (error) {
         console.error('Error initializing player:', error);
         showNotification('Erro ao inicializar o player', 'error');
+        closePlayer();
       }
     }
 
     function setChannelStatusByName(channelName, isOnline) {
       channelStatus.set(channelName.toLowerCase(), isOnline);
-      
+
       const channels = document.querySelectorAll('.channel-card');
       channels.forEach(channel => {
         const name = channel.dataset.name;
@@ -1315,24 +1503,30 @@
     }
 
     function closePlayer() {
+      hideOverlays();
+
       const overlay = document.getElementById('playerOverlay');
       overlay.classList.remove('opacity-100', 'pointer-events-auto');
       overlay.classList.add('opacity-0', 'pointer-events-none');
 
       cleanupPlayer();
+
+      if (history.state && history.state.playerOpen) {
+        history.back();
+      }
     }
 
     function setCategory(category) {
       currentCategory = category;
-      
+
       document.querySelectorAll('.category-btn').forEach(btn => {
         btn.classList.remove('active', 'bg-gradient-to-r', 'from-blue-600', 'to-purple-600');
         btn.classList.add('bg-gray-800', 'hover:bg-gray-700');
       });
-      
+
       event.target.classList.add('active', 'bg-gradient-to-r', 'from-blue-600', 'to-purple-600');
       event.target.classList.remove('bg-gray-800', 'hover:bg-gray-700');
-      
+
       filterChannels();
     }
 
@@ -1344,10 +1538,10 @@
       channels.forEach((channel, index) => {
         const name = channel.dataset.name.toLowerCase();
         const category = channel.dataset.category;
-        
+
         const matchesSearch = name.includes(searchTerm);
         const matchesCategory = currentCategory === 'todos' || category === currentCategory;
-        
+
         if (matchesSearch && matchesCategory) {
           channel.style.display = 'block';
           channel.style.animationDelay = `${visibleCount * 0.05}s`;
@@ -1371,7 +1565,7 @@
       const notification = document.getElementById('notification');
       notification.textContent = message;
       notification.className = `notification fixed top-6 left-1/2 transform -translate-x-1/2 px-6 py-4 z-50 transition-all duration-300 max-w-md text-center opacity-100 pointer-events-none`;
-      
+
       if (type === 'error') {
         notification.style.background = 'linear-gradient(135deg, rgba(220, 38, 38, 0.9), rgba(153, 27, 27, 0.8))';
       } else if (type === 'success') {
@@ -1389,19 +1583,67 @@
     function showChannelInfo() {
       const channelOverlay = document.getElementById('channelInfoOverlay');
       const closeBtnOverlay = document.getElementById('closeBtnOverlay');
-      if (!channelOverlay || !closeBtnOverlay) return;
-      
+      if (!channelOverlay || !closeBtnOverlay) {
+        console.error('Channel info or close button not found');
+        return;
+      }
+
+      console.log('Showing channel info overlay');
       channelOverlay.classList.remove('hidden');
+      channelOverlay.style.display = 'block';
       closeBtnOverlay.classList.remove('hidden');
-      
+      closeBtnOverlay.style.display = 'flex';
+
       if (overlayTimeout) {
         clearTimeout(overlayTimeout);
       }
-      
+
       overlayTimeout = setTimeout(() => {
+        console.log('Hiding channel info overlay');
         channelOverlay.classList.add('hidden');
+        channelOverlay.style.display = 'none';
         closeBtnOverlay.classList.add('hidden');
-      }, 3000);
+        closeBtnOverlay.style.display = 'none';
+      }, 7000);
+    }
+
+    function toggleChannelInfo() {
+      const channelOverlay = document.getElementById('channelInfoOverlay');
+      const closeBtnOverlay = document.getElementById('closeBtnOverlay');
+      if (!channelOverlay || !closeBtnOverlay) {
+        console.error('Channel info or close button not found');
+        return;
+      }
+
+      if (channelOverlay.classList.contains('hidden')) {
+        console.log('Toggling channel info: showing');
+        channelOverlay.classList.remove('hidden');
+        channelOverlay.style.display = 'block';
+        closeBtnOverlay.classList.remove('hidden');
+        closeBtnOverlay.style.display = 'flex';
+
+        if (overlayTimeout) {
+          clearTimeout(overlayTimeout);
+        }
+
+        overlayTimeout = setTimeout(() => {
+          console.log('Toggling channel info: hiding');
+          channelOverlay.classList.add('hidden');
+          channelOverlay.style.display = 'none';
+          closeBtnOverlay.classList.add('hidden');
+          closeBtnOverlay.style.display = 'none';
+        }, 7000);
+      } else {
+        console.log('Toggling channel info: hiding');
+        channelOverlay.classList.add('hidden');
+        channelOverlay.style.display = 'none';
+        closeBtnOverlay.classList.add('hidden');
+        closeBtnOverlay.style.display = 'none';
+        if (overlayTimeout) {
+          clearTimeout(overlayTimeout);
+          overlayTimeout = null;
+        }
+      }
     }
 
     function playClickSound() {
@@ -1416,13 +1658,13 @@
     window.addEventListener('scroll', () => {
       const currentScroll = window.pageYOffset;
       const header = document.querySelector('.header-glass');
-      
+
       if (currentScroll > lastScroll && currentScroll > 100) {
         header.style.transform = 'translateY(-100%)';
       } else {
         header.style.transform = 'translateY(0)';
       }
-      
+
       lastScroll = currentScroll;
     });
   </script>
