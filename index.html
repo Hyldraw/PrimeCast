@@ -85,6 +85,8 @@
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
+      min-width: 80px; /* Minimum width to prevent cutting off text */
+      text-align: center;
     }
 
     .category-btn::before {
@@ -211,6 +213,12 @@
       background: rgba(0, 0, 0, 0.95);
       backdrop-filter: blur(20px);
       transition: all 0.4s ease;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .player-overlay.active {
+      opacity: 1;
     }
 
     /* Video.js personalizado */
@@ -658,11 +666,11 @@
     </div>
   </nav>
 
-  <!-- Lista de Canais -->
+ <!-- Lista de Canais -->
   <main class="px-6 py-8">
     <div class="max-w-7xl mx-auto">
       <div id="channelList" class="channel-grid">
-        <div class="channel-card offline" data-name="globosp" data-category="abertos" data-url="https://02.xn--l8jyc6ar9fx162a.site/globosp/tracks-v1a1/mono.m3u8?remote=no_check_ip&token=9046bb894563462029605f588e5498d11032802d-bddb7a6e5a9d2c7a2857c06b503ab7f1-1756909619-1756906019">
+        <div class="channel-card offline" data-name="globosp" data-category="abertos" data-url="https://01.xn--l8jyc6ar9fx162a.site/globosp/tracks-v1a1/mono.m3u8?remote=no_check_ip&token=56c2227d0eeef82375333bb15cc6173691baea28-df939a2abe2141287e9472ed9cb93319-1756982909-1756979309">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -670,7 +678,7 @@
           <img src="https://i.imgur.com/aYKmlmc.png" class="channel-logo" />
           <div class="channel-name">Globo SP</div>
         </div>
-        <div class="channel-card offline" data-name="globorj" data-category="abertos" data-url="https://aipapai.shop/_temp/globorj.m3u8">
+        <div class="channel-card offline" data-name="globorj" data-category="abertos" data-url="https://01.xn--l8jyc6ar9fx162a.site/globosp/tracks-v1a1/mono.m3u8?remote=no_check_ip&token=56c2227d0eeef82375333bb15cc6173691baea28-df939a2abe2141287e9472ed9cb93319-1756982909-1756979309">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -678,13 +686,21 @@
           <img src="https://i.imgur.com/aYKmlmc.png" class="channel-logo" />
           <div class="channel-name">Globo RJ</div>
         </div>
-        <div class="channel-card" data-name="cultura" data-category="abertos" data-url="https://player-tvcultura.stream.uol.com.br/live/tvcultura_lsd.m3u8?vhost=player-tvcultura.stream.uol.com.br">
-          <div class="live-indicator online">
+        <div class="channel-card offline" data-name="tv cultura" data-category="abertos" data-url="https://player-tvcultura.stream.uol.com.br/live/tvcultura_lsd.m3u8?vhost=player-tvcultura.stream.uol.com.br">
+          <div class="live-indicator offline">
             <span class="online-text" style="display: inline;">AO VIVO</span>
             <span class="offline-text" style="display: none;">OFFLINE</span>
           </div>
           <img src="https://i.imgur.com/PJLJzdW.png" class="channel-logo" />
           <div class="channel-name">TV Cultura</div>
+        </div>
+        <div class="channel-card offline" data-name="tv brasil" data-category="abertos" data-url="https://tvbrasil-stream.ebc.com.br/EBC_HD-avc1_1800000=10001.m3u8">
+          <div class="live-indicator offline">
+            <span class="online-text" style="display: inline;">AO VIVO</span>
+            <span class="offline-text" style="display: none;">OFFLINE</span>
+          </div>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/TV_Brasil_logo_2019.svg" class="channel-logo" />
+          <div class="channel-name">TV Brasil</div>
         </div>
         <div class="channel-card offline" data-name="record" data-category="abertos" data-url="https://aipapai.shop/_temp/record.m3u8">
           <div class="live-indicator offline">
@@ -694,7 +710,7 @@
           <img src="https://i.imgur.com/SehYFaG.png" class="channel-logo" />
           <div class="channel-name">Record</div>
         </div>
-        <div class="channel-card offline" data-name="redetv" data-category="abertos" data-url="https://aipapai.shop/_temp/redetv.m3u8">
+        <div class="channel-card offline" data-name="redetv" data-category="abertos" data-url="https://video04.logicahost.com.br/tvpampa/tvpampa/chunklist_w2086641684.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -742,7 +758,7 @@
           <img src="https://i.imgur.com/uzNyEV4.png" class="channel-logo" />
           <div class="channel-name">Band News</div>
         </div>
-        <div class="channel-card offline" data-name="record news" data-category="noticias" data-url="https://aipapai.shop/_temp/recordnews.m3u8">
+        <div class="channel-card offline" data-name="record news" data-category="noticias" data-url="https://run-rnw-rn.otteravision.com/rnw/rn/rnw_rn_720p_high.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -750,7 +766,7 @@
           <img src="https://i.imgur.com/OlccJ9t.png" class="channel-logo" />
           <div class="channel-name">Record News</div>
         </div>
-        <div class="channel-card offline" data-name="sportv" data-category="esportes" data-url="https://aipapai.shop/_temp/sportv.m3u8">
+        <div class="channel-card offline" data-name="sportv" data-category="esportes" data-url="https://02.xn--l8jyc6ar9fx162a.site/sportv/tracks-v1a1/mono.m3u8?remote=no_check_ip&token=5cb2d2336d07edbec65eacfe64bac53d34ea1efa-d898f9a0a9f18687cbf8025e4b9f9d91-1756985323-1756981723">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -758,7 +774,7 @@
           <img src="https://i.imgur.com/IwO9fQL.png" class="channel-logo" />
           <div class="channel-name">Sportv</div>
         </div>
-        <div class="channel-card offline" data-name="sportv 2" data-category="esportes" data-url="https://aipapai.shop/_temp/sportv2.m3u8">
+        <div class="channel-card offline" data-name="sportv 2" data-category="esportes" data-url="https://01.xn--l8jyc6ar9fx162a.site/sportv2/tracks-v1a1/mono.m3u8?remote=no_check_ip&token=6221c1cb6f0e8044c9072b0548e2a212cb808fcd-1405ac6678e6985e22ac9047697b77f9-1756985388-1756981788">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -909,6 +925,14 @@
           </div>
           <img src="https://via.placeholder.com/64x64/ff6b6b/ffffff?text=CN" class="channel-logo" />
           <div class="channel-name">Cartoon Network</div>
+        </div>
+        <div class="channel-card offline" data-name="loading" data-category="variedades" data-url="https://stmv1.srvif.com/loadingtv/loadingtv/playlist.m3u8?hls_ctx=5903w135">
+          <div class="live-indicator offline">
+            <span class="online-text" style="display: none;">AO VIVO</span>
+            <span class="offline-text" style="display: inline;">OFFLINE</span>
+          </div>
+          <img src="https://agenciauva.net/wp-content/uploads/2020/12/logo_loading_preto.png?w=1320&h=388&crop=1" class="channel-logo" />
+          <div class="channel-name">Loading</div>
         </div>
         <div class="channel-card offline" data-name="discovery" data-category="documentarios" data-url="https://aipapai.shop/_temp/discovery.m3u8">
           <div class="live-indicator offline">
@@ -1220,7 +1244,7 @@
           if (videoElement && videoElement.el_) {
             videoElement.el_.pause();
             videoElement.el_.src = '';
-            videoElement.el_.load();
+            element.el_.load();
           }
           
           player.pause();
