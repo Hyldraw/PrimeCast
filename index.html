@@ -244,6 +244,14 @@
 
     .vjs-theme-modern.vjs-user-active .vjs-control-bar {
       opacity: 1;
+      display: flex !important;
+    }
+
+    /* Force controls visibility on mobile interaction */
+    .vjs-theme-modern .vjs-control-bar:focus-within,
+    .vjs-theme-modern:hover .vjs-control-bar {
+      opacity: 1 !important;
+      display: flex !important;
     }
 
     .vjs-theme-modern .vjs-big-play-button {
@@ -1031,7 +1039,13 @@
       checkChannelStatus(); // Run status check once on page load
       setupChannelClickListeners();
 
-      window.addEventListener('orientationchange', updateOrientationPrompt);
+      // Múltiplos listeners para detecção de orientação robusta
+      window.addEventListener('orientationchange', function() {
+        setTimeout(updateOrientationPrompt, 100);
+      });
+      window.addEventListener('resize', function() {
+        setTimeout(updateOrientationPrompt, 100);
+      });
 
       // Handle browser back button
       window.addEventListener('popstate', function(e) {
@@ -1197,7 +1211,19 @@
         return;
       }
 
-      const isLandscape = window.matchMedia("(orientation: landscape)").matches;
+      // Múltiplas formas de detectar orientação para maior compatibilidade
+      const isLandscape = 
+        window.matchMedia("(orientation: landscape)").matches ||
+        (window.innerWidth > window.innerHeight) ||
+        (screen.width > screen.height);
+      
+      console.log('Checking orientation:', { 
+        isLandscape, 
+        innerWidth: window.innerWidth, 
+        innerHeight: window.innerHeight,
+        mediaQuery: window.matchMedia("(orientation: landscape)").matches 
+      });
+
       if (isLandscape) {
         hideRotatePrompt();
       } else {
@@ -1499,17 +1525,35 @@
 
             const showControls = (event) => {
               if (event.target.id === 'closeBtnOverlay') return;
+              console.log('User interaction detected on mobile:', event.type);
               toggleChannelInfo();
               if (player) {
                 player.userActive(true);
+                // Force show Video.js controls on mobile
+                player.trigger('useractive');
                 console.log('Controls shown via user interaction');
               }
             };
 
-            videoWrapper.addEventListener('click', showControls);
-            videoWrapper.addEventListener('touchstart', showControls);
-            videoWrapper.addEventListener('touchend', showControls);
-            videoWrapper.addEventListener('mousemove', showControls);
+            // Add event listeners with better mobile support
+            videoWrapper.addEventListener('click', showControls, { passive: false });
+            videoWrapper.addEventListener('touchstart', showControls, { passive: false });
+            videoWrapper.addEventListener('touchend', showControls, { passive: false });
+            videoWrapper.addEventListener('mousemove', showControls, { passive: true });
+            
+            // Additional mobile-specific events
+            videoWrapper.addEventListener('touchmove', showControls, { passive: false });
+            
+            // Direct player event listeners for mobile compatibility
+            player.on('touchstart', function(event) {
+              console.log('Player touchstart detected');
+              showControls(event);
+            });
+            
+            player.on('touchend', function(event) {
+              console.log('Player touchend detected');
+              showControls(event);
+            });
 
             resolve();
           });
