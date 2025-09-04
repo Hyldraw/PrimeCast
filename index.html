@@ -12,14 +12,14 @@
   <script src="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@latest/dist/videojs-hls-quality-selector.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     html, body {
       height: 100%;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -85,8 +85,6 @@
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
-      min-width: 80px; /* Minimum width to prevent cutting off text */
-      text-align: center;
     }
 
     .category-btn::before {
@@ -213,12 +211,6 @@
       background: rgba(0, 0, 0, 0.95);
       backdrop-filter: blur(20px);
       transition: all 0.4s ease;
-      opacity: 0;
-      transition: opacity 0.3s ease-in-out;
-    }
-
-    .player-overlay.active {
-      opacity: 1;
     }
 
     /* Video.js personalizado */
@@ -466,15 +458,31 @@
 
     /* Responsive */
     @media (max-width: 768px) {
+      .category-container {
+        padding: 12px 16px;
+      }
+
+      .category-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        min-width: fit-content;
+        flex-shrink: 0;
+      }
+
+      .category-btn i {
+        font-size: 0.9rem;
+        margin-right: 6px;
+      }
+
       .channel-grid {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 16px;
       }
-      
+
       .channel-card {
         padding: 16px;
       }
-      
+
       .channel-logo {
         width: 56px;
         height: 56px;
@@ -501,38 +509,54 @@
       }
 
       .vjs-theme-modern .vjs-control-bar {
-        padding: 6px 12px;
-        height: 40px;
+        padding: 8px 16px;
+        height: 45px;
         z-index: 3500;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+        display: flex !important;
+        align-items: center;
+        justify-content: flex-start;
       }
 
       .vjs-theme-modern .vjs-play-control {
-        margin-right: 8px;
+        margin-right: 10px;
+        display: flex !important;
+        align-items: center;
+        font-size: 1.2rem;
       }
 
       .vjs-theme-modern .vjs-volume-panel {
-        margin-right: 8px;
+        margin-right: 10px;
         flex-direction: row;
         align-items: center;
+        display: flex !important;
       }
 
       .vjs-theme-modern .vjs-volume-control {
-        width: 60px;
+        width: 70px;
         height: 4px;
-        margin-left: 6px;
+        margin-left: 8px;
+        display: flex !important;
       }
 
       .vjs-theme-modern .vjs-current-time {
-        font-size: 0.8rem;
-        margin-left: 8px;
+        font-size: 0.85rem;
+        margin-left: 10px;
+        display: flex !important;
+        align-items: center;
+        color: white;
       }
 
       .vjs-theme-modern .vjs-progress-control {
-        margin: 0 8px;
+        margin: 0 10px;
+        flex: 1;
+        display: flex !important;
       }
 
       .vjs-theme-modern .vjs-quality-selector {
-        margin-left: 8px;
+        margin-left: 10px;
+        display: flex !important;
+        align-items: center;
       }
 
       @media (orientation: portrait) {
@@ -611,7 +635,7 @@
           <p class="text-gray-400 text-sm">TV Brasileira Premium</p>
         </div>
       </div>
-      
+
       <div class="search-container">
         <div class="relative">
           <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
@@ -642,8 +666,14 @@
           <i class="fas fa-tv"></i>
           Abertos
         </button>
-        <button class="category-btn bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2" onclick="setCategory('noticias')">
+        <button class="category-btn bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2" onclick="setCategory('variedades')">
+
+          <i class="fa-solid fa-puzzle-piece"></i>
+            Variedades
+          </button>
+          <button class="category-btn bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2" onclick="setCategory('noticias')">
           <i class="fas fa-newspaper"></i>
+
           Notícias
         </button>
         <button class="category-btn bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2" onclick="setCategory('esportes')">
@@ -666,7 +696,7 @@
     </div>
   </nav>
 
- <!-- Lista de Canais -->
+  <!-- Lista de Canais -->
   <main class="px-6 py-8">
     <div class="max-w-7xl mx-auto">
       <div id="channelList" class="channel-grid">
@@ -687,7 +717,7 @@
           <div class="channel-name">Globo RJ</div>
         </div>
         <div class="channel-card offline" data-name="tv cultura" data-category="abertos" data-url="https://player-tvcultura.stream.uol.com.br/live/tvcultura_lsd.m3u8?vhost=player-tvcultura.stream.uol.com.br">
-          <div class="live-indicator offline">
+          <div class="live-indicator online">
             <span class="online-text" style="display: inline;">AO VIVO</span>
             <span class="offline-text" style="display: none;">OFFLINE</span>
           </div>
@@ -695,7 +725,7 @@
           <div class="channel-name">TV Cultura</div>
         </div>
         <div class="channel-card offline" data-name="tv brasil" data-category="abertos" data-url="https://tvbrasil-stream.ebc.com.br/EBC_HD-avc1_1800000=10001.m3u8">
-          <div class="live-indicator offline">
+          <div class="live-indicator online">
             <span class="online-text" style="display: inline;">AO VIVO</span>
             <span class="offline-text" style="display: none;">OFFLINE</span>
           </div>
@@ -766,7 +796,7 @@
           <img src="https://i.imgur.com/OlccJ9t.png" class="channel-logo" />
           <div class="channel-name">Record News</div>
         </div>
-        <div class="channel-card offline" data-name="sportv" data-category="esportes" data-url="https://02.xn--l8jyc6ar9fx162a.site/sportv/tracks-v1a1/mono.m3u8?remote=no_check_ip&token=5cb2d2336d07edbec65eacfe64bac53d34ea1efa-d898f9a0a9f18687cbf8025e4b9f9d91-1756985323-1756981723">
+        <div class="channel-card offline" data-name="sportv" data-category="esportes" data-url="https://aipapai.shop/_temp/sportv.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -774,7 +804,7 @@
           <img src="https://i.imgur.com/IwO9fQL.png" class="channel-logo" />
           <div class="channel-name">Sportv</div>
         </div>
-        <div class="channel-card offline" data-name="sportv 2" data-category="esportes" data-url="https://01.xn--l8jyc6ar9fx162a.site/sportv2/tracks-v1a1/mono.m3u8?remote=no_check_ip&token=6221c1cb6f0e8044c9072b0548e2a212cb808fcd-1405ac6678e6985e22ac9047697b77f9-1756985388-1756981788">
+        <div class="channel-card offline" data-name="sportv 2" data-category="esportes" data-url="https://aipapai.shop/_temp/sportv2.m3u8">
           <div class="live-indicator offline">
             <span class="online-text" style="display: none;">AO VIVO</span>
             <span class="offline-text" style="display: inline;">OFFLINE</span>
@@ -960,7 +990,7 @@
         </div>
       </div>
     </div>
-    
+
     <button id="closeBtnOverlay" onclick="closePlayer()" class="close-btn-overlay hidden">
       <i class="fas fa-times text-lg text-white"></i>
     </button>
@@ -969,7 +999,7 @@
       <i class="fas fa-mobile-alt fa-rotate-90"></i>
       <p>Por favor, gire o dispositivo para a horizontal</p>
     </div>
-    
+
     <div class="relative h-full" id="videoContainer">
     </div>
   </div>
@@ -1000,9 +1030,9 @@
       setupChannelAnimations();
       checkChannelStatus(); // Run status check once on page load
       setupChannelClickListeners();
-      
+
       window.addEventListener('orientationchange', updateOrientationPrompt);
-      
+
       // Handle browser back button
       window.addEventListener('popstate', function(e) {
         if (player) {
@@ -1010,13 +1040,13 @@
           closePlayer();
         }
       });
-      
+
       window.addEventListener('beforeunload', function() {
         hideOverlays();
         cleanupPlayer();
         stopStatusCheckInterval();
       });
-      
+
       // Initial orientation check
       updateOrientationPrompt();
     });
@@ -1042,16 +1072,16 @@
 
     async function checkChannelStatus() {
       const channels = document.querySelectorAll('.channel-card[data-url]');
-      
+
       for (let channel of channels) {
         const url = channel.dataset.url;
         const name = channel.dataset.name;
         let isOnline = false;
-        
+
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 5000);
-          
+
           const response = await fetch(url, {
             method: 'GET',
             mode: 'cors',
@@ -1061,9 +1091,9 @@
               'Range': 'bytes=0-1023'
             }
           });
-          
+
           clearTimeout(timeoutId);
-          
+
           if (response.ok) {
             const contentType = response.headers.get('content-type') || '';
             if (contentType.includes('application/vnd.apple.mpegurl') || contentType.includes('application/x-mpegURL')) {
@@ -1072,8 +1102,12 @@
           }
         } catch (error) {
           // Suppress all errors to keep console clean
+          // Only log critical unexpected errors
+          if (error.name !== 'AbortError' && error.message !== 'Failed to fetch') {
+            console.error(`Critical error checking status for ${name}:`, error);
+          }
         }
-        
+
         setChannelStatus(channel, isOnline);
         channelStatus.set(name, isOnline);
       }
@@ -1094,7 +1128,7 @@
       const indicator = channelElement.querySelector('.live-indicator');
       const onlineText = indicator.querySelector('.online-text');
       const offlineText = indicator.querySelector('.offline-text');
-      
+
       if (isOnline) {
         channelElement.classList.remove('offline');
         indicator.classList.add('online');
@@ -1191,9 +1225,9 @@
     function playChannel(url, name, logo) {
       try {
         playClickSound();
-        
+
         cleanupPlayer();
-        
+
         const overlay = document.getElementById('playerOverlay');
         overlay.classList.remove('opacity-0', 'pointer-events-none');
         overlay.classList.add('opacity-100', 'pointer-events-auto');
@@ -1219,7 +1253,7 @@
 
     function cleanupPlayer() {
       hideOverlays();
-      
+
       if (notificationTimeout) {
         clearTimeout(notificationTimeout);
         notificationTimeout = null;
@@ -1237,16 +1271,16 @@
         }
         window.currentHls = null;
       }
-      
+
       if (player) {
         try {
           const videoElement = player.tech(true);
           if (videoElement && videoElement.el_) {
             videoElement.el_.pause();
             videoElement.el_.src = '';
-            element.el_.load();
+            videoElement.el_.load();
           }
-          
+
           player.pause();
           player.dispose();
         } catch (e) {
@@ -1300,21 +1334,21 @@
         const uniqueId = 'videoPlayer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         const videoWrapper = document.createElement('div');
         videoWrapper.className = 'video-wrapper w-full h-full';
-        
+
         const newVideoElement = document.createElement('video-js');
         newVideoElement.id = uniqueId;
         newVideoElement.className = 'vjs-theme-modern video-js vjs-default-skin w-full h-full';
         newVideoElement.setAttribute('controls', '');
         newVideoElement.setAttribute('preload', 'auto');
         newVideoElement.setAttribute('data-setup', '{}');
-        
+
         newVideoElement.innerHTML = `
           <p class="vjs-no-js">
             Para assistir este vídeo, você precisa ativar o JavaScript, e considere fazer upgrade para um navegador web
             <a href="https://videojs.com/html5-video-support/" target="_blank">que suporte vídeos HTML5</a>.
           </p>
         `;
-        
+
         videoWrapper.appendChild(newVideoElement);
         videoContainer.appendChild(videoWrapper);
 
@@ -1343,7 +1377,7 @@
             hotkeys: true,
             doubleClick: false
           },
-          inactivityTimeout: 7000
+          inactivityTimeout: 3000
         });
 
         await new Promise(resolve => {
@@ -1369,14 +1403,14 @@
                   xhr.timeout = 15000;
                 }
               });
-              
+
               window.currentHls.loadSource(url);
               window.currentHls.attachMedia(player.tech().el());
-              
+
               window.currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
                 console.log('Stream ready, starting playback');
                 setChannelStatusByName(channelName, true);
-                
+
                 player.hlsQualitySelector({
                   displayCurrentQuality: true
                 });
@@ -1395,7 +1429,7 @@
                 console.error('HLS Error:', data);
                 if (data.fatal) {
                   setChannelStatusByName(channelName, false);
-                  
+
                   switch(data.type) {
                     case Hls.ErrorTypes.NETWORK_ERROR:
                       showNotification('Erro de conexão - Canal offline', 'error');
@@ -1407,7 +1441,7 @@
                       showNotification('Canal indisponível no momento', 'error');
                       break;
                   }
-                  
+
                   setTimeout(() => {
                     closePlayer();
                   }, 2000);
@@ -1428,7 +1462,7 @@
                 src: url,
                 type: 'application/x-mpegURL'
               });
-              
+
               player.play().catch(e => {
                 console.log('Autoplay prevented:', e);
                 showNotification('Clique na tela para iniciar', 'info');
@@ -1490,7 +1524,7 @@
 
     function setChannelStatusByName(channelName, isOnline) {
       channelStatus.set(channelName.toLowerCase(), isOnline);
-      
+
       const channels = document.querySelectorAll('.channel-card');
       channels.forEach(channel => {
         const name = channel.dataset.name;
@@ -1502,13 +1536,13 @@
 
     function closePlayer() {
       hideOverlays();
-      
+
       const overlay = document.getElementById('playerOverlay');
       overlay.classList.remove('opacity-100', 'pointer-events-auto');
       overlay.classList.add('opacity-0', 'pointer-events-none');
 
       cleanupPlayer();
-      
+
       if (history.state && history.state.playerOpen) {
         history.back();
       }
@@ -1516,15 +1550,15 @@
 
     function setCategory(category) {
       currentCategory = category;
-      
+
       document.querySelectorAll('.category-btn').forEach(btn => {
         btn.classList.remove('active', 'bg-gradient-to-r', 'from-blue-600', 'to-purple-600');
         btn.classList.add('bg-gray-800', 'hover:bg-gray-700');
       });
-      
+
       event.target.classList.add('active', 'bg-gradient-to-r', 'from-blue-600', 'to-purple-600');
       event.target.classList.remove('bg-gray-800', 'hover:bg-gray-700');
-      
+
       filterChannels();
     }
 
@@ -1536,10 +1570,10 @@
       channels.forEach((channel, index) => {
         const name = channel.dataset.name.toLowerCase();
         const category = channel.dataset.category;
-        
+
         const matchesSearch = name.includes(searchTerm);
         const matchesCategory = currentCategory === 'todos' || category === currentCategory;
-        
+
         if (matchesSearch && matchesCategory) {
           channel.style.display = 'block';
           channel.style.animationDelay = `${visibleCount * 0.05}s`;
@@ -1563,7 +1597,7 @@
       const notification = document.getElementById('notification');
       notification.textContent = message;
       notification.className = `notification fixed top-6 left-1/2 transform -translate-x-1/2 px-6 py-4 z-50 transition-all duration-300 max-w-md text-center opacity-100 pointer-events-none`;
-      
+
       if (type === 'error') {
         notification.style.background = 'linear-gradient(135deg, rgba(220, 38, 38, 0.9), rgba(153, 27, 27, 0.8))';
       } else if (type === 'success') {
@@ -1585,24 +1619,30 @@
         console.error('Channel info or close button not found');
         return;
       }
-      
+
       console.log('Showing channel info overlay');
       channelOverlay.classList.remove('hidden');
       channelOverlay.style.display = 'block';
+      channelOverlay.style.opacity = '1';
       closeBtnOverlay.classList.remove('hidden');
       closeBtnOverlay.style.display = 'flex';
-      
+      closeBtnOverlay.style.opacity = '1';
+
       if (overlayTimeout) {
         clearTimeout(overlayTimeout);
       }
-      
+
       overlayTimeout = setTimeout(() => {
         console.log('Hiding channel info overlay');
-        channelOverlay.classList.add('hidden');
-        channelOverlay.style.display = 'none';
-        closeBtnOverlay.classList.add('hidden');
-        closeBtnOverlay.style.display = 'none';
-      }, 7000);
+        channelOverlay.style.opacity = '0';
+        closeBtnOverlay.style.opacity = '0';
+        setTimeout(() => {
+          channelOverlay.classList.add('hidden');
+          channelOverlay.style.display = 'none';
+          closeBtnOverlay.classList.add('hidden');
+          closeBtnOverlay.style.display = 'none';
+        }, 300);
+      }, 3000);
     }
 
     function toggleChannelInfo() {
@@ -1613,35 +1653,31 @@
         return;
       }
 
-      if (channelOverlay.classList.contains('hidden')) {
-        console.log('Toggling channel info: showing');
-        channelOverlay.classList.remove('hidden');
-        channelOverlay.style.display = 'block';
-        closeBtnOverlay.classList.remove('hidden');
-        closeBtnOverlay.style.display = 'flex';
-        
-        if (overlayTimeout) {
-          clearTimeout(overlayTimeout);
-        }
-        
-        overlayTimeout = setTimeout(() => {
-          console.log('Toggling channel info: hiding');
+      // Always show controls on interaction and reset timer
+      console.log('User interaction: showing/maintaining controls');
+      channelOverlay.classList.remove('hidden');
+      channelOverlay.style.display = 'block';
+      channelOverlay.style.opacity = '1';
+      closeBtnOverlay.classList.remove('hidden');
+      closeBtnOverlay.style.display = 'flex';
+      closeBtnOverlay.style.opacity = '1';
+
+      // Clear existing timer and start new 3-second countdown
+      if (overlayTimeout) {
+        clearTimeout(overlayTimeout);
+      }
+
+      overlayTimeout = setTimeout(() => {
+        console.log('Auto-hiding controls after user interaction timeout');
+        channelOverlay.style.opacity = '0';
+        closeBtnOverlay.style.opacity = '0';
+        setTimeout(() => {
           channelOverlay.classList.add('hidden');
           channelOverlay.style.display = 'none';
           closeBtnOverlay.classList.add('hidden');
           closeBtnOverlay.style.display = 'none';
-        }, 7000);
-      } else {
-        console.log('Toggling channel info: hiding');
-        channelOverlay.classList.add('hidden');
-        channelOverlay.style.display = 'none';
-        closeBtnOverlay.classList.add('hidden');
-        closeBtnOverlay.style.display = 'none';
-        if (overlayTimeout) {
-          clearTimeout(overlayTimeout);
-          overlayTimeout = null;
-        }
-      }
+        }, 300);
+      }, 3000);
     }
 
     function playClickSound() {
@@ -1656,13 +1692,13 @@
     window.addEventListener('scroll', () => {
       const currentScroll = window.pageYOffset;
       const header = document.querySelector('.header-glass');
-      
+
       if (currentScroll > lastScroll && currentScroll > 100) {
         header.style.transform = 'translateY(-100%)';
       } else {
         header.style.transform = 'translateY(0)';
       }
-      
+
       lastScroll = currentScroll;
     });
   </script>
