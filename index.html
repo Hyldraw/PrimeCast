@@ -293,6 +293,11 @@
       backdrop-filter: blur(10px);
       transition: all 0.3s ease;
       z-index: 3500;
+      position: absolute !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      margin: 0 !important;
     }
 
     .vjs-theme-modern .vjs-big-play-button:hover {
@@ -304,8 +309,7 @@
     .vjs-theme-modern .vjs-play-control,
     .vjs-theme-modern .vjs-volume-panel,
     .vjs-theme-modern .vjs-current-time,
-    .vjs-theme-modern .vjs-progress-control,
-    .vjs-theme-modern .vjs-quality-selector {
+    .vjs-theme-modern .vjs-progress-control {
       display: flex !important;
       color: white;
       align-items: center;
@@ -365,11 +369,6 @@
     .vjs-theme-modern .vjs-current-time {
       order: 4;
       font-size: 0.9rem;
-      margin-left: 12px;
-    }
-
-    .vjs-theme-modern .vjs-quality-selector {
-      order: 5;
       margin-left: 12px;
     }
 
@@ -634,11 +633,6 @@
         display: flex !important;
       }
 
-      .vjs-theme-modern .vjs-quality-selector {
-        margin-left: 10px;
-        display: flex !important;
-        align-items: center;
-      }
 
       @media (orientation: portrait) {
         .rotate-prompt {
@@ -918,10 +912,10 @@
           <img src="https://i.imgur.com/Orcyltp.png" class="channel-logo" />
           <div class="channel-name">SBT</div>
         </div>
-        <div class="channel-card offline" data-name="band" data-category="abertos" data-url="https://aipapai.shop/_temp/band.m3u8">
-          <div class="live-indicator offline">
-            <span class="online-text" style="display: none;">AO VIVO</span>
-            <span class="offline-text" style="display: inline;">OFFLINE</span>
+        <div class="channel-card" data-name="band" data-category="abertos" data-url="..." data-embed="https://www.embedcanais.net/band">
+          <div class="live-indicator online">
+            <span class="online-text" style="display: inline;">AO VIVO</span>
+            <span class="offline-text" style="display: none;">OFFLINE</span>
           </div>
           <img src="https://i.imgur.com/QZgrKOf.png" class="channel-logo" />
           <div class="channel-name">Band</div>
@@ -1192,6 +1186,9 @@
       setupChannelAnimations();
       checkChannelStatus(); // Run status check once on page load
       setupChannelClickListeners();
+      
+      // Set Band channel as online by default (since it uses embed)
+      setChannelStatusByName('Band', true);
 
       // Múltiplos listeners para detecção de orientação robusta
       window.addEventListener('orientationchange', function() {
@@ -1231,9 +1228,10 @@
       channels.forEach(channel => {
         channel.addEventListener('click', () => {
           const url = channel.dataset.url;
+          const embedUrl = channel.dataset.embed; // Check for embed URL
           const name = channel.querySelector('.channel-name').textContent;
           const logo = channel.querySelector('.channel-logo').src;
-          playChannel(url, name, logo);
+          playChannel(url, name, logo, embedUrl);
         });
       });
     }
@@ -1244,6 +1242,12 @@
       for (let channel of channels) {
         const url = channel.dataset.url;
         const name = channel.dataset.name;
+        
+        // Skip channels with embed URLs as they should always be online
+        if (channel.dataset.embed) {
+          setChannelStatus(channel, true);
+          continue;
+        }
         let isOnline = false;
 
         try {
@@ -1402,7 +1406,7 @@
       }
     }
 
-    function playChannel(url, name, logo) {
+    function playChannel(url, name, logo, embedUrl = null) {
       try {
         playClickSound();
 
@@ -1420,12 +1424,21 @@
 
         history.pushState({ playerOpen: true }, '', '');
 
-        initializePlayer(url, name).then(() => {
-          showChannelInfo();
-          lockOrientationToLandscape();
-          updateOrientationPrompt();
-          if (player) player.userActive(true);
-        });
+        // Check if channel has embed URL and use embed player instead
+        if (embedUrl) {
+          initializeEmbedPlayer(embedUrl, name).then(() => {
+            showChannelInfo();
+            lockOrientationToLandscape();
+            updateOrientationPrompt();
+          });
+        } else {
+          initializePlayer(url, name).then(() => {
+            showChannelInfo();
+            lockOrientationToLandscape();
+            updateOrientationPrompt();
+            if (player) player.userActive(true);
+          });
+        }
 
       } catch (error) {
         console.error('Error playing channel:', error);
@@ -1488,6 +1501,12 @@
 
       const videoContainer = document.getElementById('videoContainer');
       if (videoContainer) {
+        // Clean up both video players and embed iframes
+        const embeds = videoContainer.querySelectorAll('iframe');
+        embeds.forEach(embed => {
+          embed.src = 'about:blank';
+          embed.remove();
+        });
         videoContainer.innerHTML = '';
       }
 
@@ -1505,6 +1524,160 @@
       });
 
       unlockOrientation();
+    }
+
+    async function initializeEmbedPlayer(embedUrl, channelName) {
+      try {
+        const videoContainer = document.getElementById('videoContainer');
+        if (!videoContainer) {
+          throw new Error('Video container not found');
+        }
+
+        // Create iframe wrapper that will hide embed controls
+        const iframeWrapper = document.createElement('div');
+        iframeWrapper.className = 'embed-wrapper w-full h-full relative';
+        iframeWrapper.style.cssText = `
+          width: 100% !important;
+          height: 100% !important;
+          position: relative;
+          overflow: hidden;
+          background: black;
+        `;
+
+        // Create the iframe
+        const iframe = document.createElement('iframe');
+        iframe.src = embedUrl;
+        iframe.style.cssText = `
+          width: 100% !important;
+          height: 100% !important;
+          border: none;
+          position: absolute;
+          top: 0;
+          left: 0;
+          background: black;
+        `;
+        iframe.setAttribute('allowfullscreen', '');
+        iframe.setAttribute('frameborder', '0');
+
+        // Create custom overlay to handle interactions and maintain PrimeCast UI
+        const customControls = document.createElement('div');
+        customControls.className = 'custom-embed-controls';
+        customControls.style.cssText = `
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 60px;
+          background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+          backdrop-filter: blur(10px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          opacity: 1;
+          transition: opacity 0.3s ease;
+          color: white;
+          font-family: 'Inter', sans-serif;
+          font-size: 0.9rem;
+        `;
+        customControls.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <i class="fas fa-tv" style="color: #667eea;"></i>
+            <span>Assistindo ${channelName}</span>
+            <div style="width: 8px; height: 8px; background: #ff4444; border-radius: 50%; animation: pulse 2s infinite;"></div>
+            <span style="font-size: 0.8rem; color: #ff4444;">AO VIVO</span>
+          </div>
+        `;
+
+        iframeWrapper.appendChild(iframe);
+        iframeWrapper.appendChild(customControls);
+        videoContainer.appendChild(iframeWrapper);
+
+        // Set up interaction handlers for mobile/desktop
+        let controlsTimeout;
+        const showControls = () => {
+          customControls.style.opacity = '1';
+          
+          // Show PrimeCast overlays on interaction, just like other players
+          const channelOverlay = document.getElementById('channelInfoOverlay');
+          const closeBtnOverlay = document.getElementById('closeBtnOverlay');
+          if (channelOverlay) {
+            channelOverlay.classList.remove('hidden');
+            channelOverlay.style.display = 'block';
+            channelOverlay.style.opacity = '1';
+          }
+          if (closeBtnOverlay) {
+            closeBtnOverlay.classList.remove('hidden');
+            closeBtnOverlay.style.display = 'flex';
+            closeBtnOverlay.style.opacity = '1';
+          }
+          
+          if (controlsTimeout) clearTimeout(controlsTimeout);
+          controlsTimeout = setTimeout(() => {
+            customControls.style.opacity = '0';
+            // Hide overlays after 3 seconds, just like other players
+            if (channelOverlay) {
+              channelOverlay.style.opacity = '0';
+              setTimeout(() => {
+                channelOverlay.classList.add('hidden');
+                channelOverlay.style.display = 'none';
+              }, 300);
+            }
+            if (closeBtnOverlay) {
+              closeBtnOverlay.style.opacity = '0';
+              setTimeout(() => {
+                closeBtnOverlay.classList.add('hidden');
+                closeBtnOverlay.style.display = 'none';
+              }, 300);
+            }
+          }, 3000);
+        };
+
+        const hideControls = () => {
+          customControls.style.opacity = '0';
+          const channelOverlay = document.getElementById('channelInfoOverlay');
+          const closeBtnOverlay = document.getElementById('closeBtnOverlay');
+          if (channelOverlay) {
+            channelOverlay.style.opacity = '0';
+            setTimeout(() => {
+              channelOverlay.classList.add('hidden');
+              channelOverlay.style.display = 'none';
+            }, 300);
+          }
+          if (closeBtnOverlay) {
+            closeBtnOverlay.style.opacity = '0';
+            setTimeout(() => {
+              closeBtnOverlay.classList.add('hidden');
+              closeBtnOverlay.style.display = 'none';
+            }, 300);
+          }
+        };
+
+        // Add interaction events
+        iframeWrapper.addEventListener('mousemove', showControls);
+        iframeWrapper.addEventListener('touchstart', showControls);
+        iframeWrapper.addEventListener('click', showControls);
+
+        // Show controls initially
+        showControls();
+
+        // Simulate successful loading and set channel as online
+        showNotification('Canal Band carregado com sucesso', 'success');
+        setChannelStatusByName(channelName, true);
+        
+        // Show the PrimeCast overlays initially for 3 seconds, like other players
+        setTimeout(() => {
+          showChannelInfo();
+        }, 500);
+
+        console.log('Embed player initialized successfully');
+        return Promise.resolve();
+
+      } catch (error) {
+        console.error('Error initializing embed player:', error);
+        showNotification('Erro ao carregar o embed', 'error');
+        throw error;
+      }
     }
 
     async function initializePlayer(url, channelName) {
@@ -1554,13 +1727,15 @@
             timeDivider: false,
             durationDisplay: false,
             progressControl: true,
-            qualitySelector: true
+            qualitySelector: false
           },
           userActions: {
             hotkeys: true,
             doubleClick: false
           },
-          inactivityTimeout: 3000
+          inactivityTimeout: 3000,
+          playbackRates: [],
+          preload: 'auto'
         });
 
         await new Promise(resolve => {
@@ -1594,9 +1769,7 @@
                 console.log('Stream ready, starting playback');
                 setChannelStatusByName(channelName, true);
 
-                player.hlsQualitySelector({
-                  displayCurrentQuality: true
-                });
+                // Quality selector removed
 
                 player.play().catch(e => {
                   console.log('Autoplay prevented, user interaction required:', e);
@@ -1683,12 +1856,34 @@
             const showControls = (event) => {
               if (event.target.id === 'closeBtnOverlay') return;
               console.log('User interaction detected on mobile:', event.type);
+              
+              // Show PrimeCast overlays and Video.js controls together
               toggleChannelInfo();
               if (player) {
                 player.userActive(true);
-                // Force show Video.js controls on mobile
                 player.trigger('useractive');
                 console.log('Controls shown via user interaction');
+                
+                // Hide both PrimeCast overlays and Video.js controls at the same time (3 seconds)
+                setTimeout(() => {
+                  if (player) {
+                    player.userActive(false);
+                  }
+                  // Also hide PrimeCast overlays at the same time
+                  const channelOverlay = document.getElementById('channelInfoOverlay');
+                  const closeBtnOverlay = document.getElementById('closeBtnOverlay');
+                  if (channelOverlay && !channelOverlay.classList.contains('hidden')) {
+                    console.log('Auto-hiding PrimeCast controls after 3 seconds');
+                    channelOverlay.style.opacity = '0';
+                    closeBtnOverlay.style.opacity = '0';
+                    setTimeout(() => {
+                      channelOverlay.classList.add('hidden');
+                      channelOverlay.style.display = 'none';
+                      closeBtnOverlay.classList.add('hidden');
+                      closeBtnOverlay.style.display = 'none';
+                    }, 300);
+                  }
+                }, 3000);
               }
             };
 
@@ -1857,7 +2052,7 @@
         return;
       }
 
-      // Always show controls on interaction and reset timer
+      // Always show controls on interaction - let the showControls function handle the timing
       console.log('User interaction: showing/maintaining controls');
       channelOverlay.classList.remove('hidden');
       channelOverlay.style.display = 'block';
@@ -1866,22 +2061,11 @@
       closeBtnOverlay.style.display = 'flex';
       closeBtnOverlay.style.opacity = '1';
 
-      // Clear existing timer and start new 3-second countdown
+      // Clear any existing timer - the showControls function will handle auto-hide
       if (overlayTimeout) {
         clearTimeout(overlayTimeout);
+        overlayTimeout = null;
       }
-
-      overlayTimeout = setTimeout(() => {
-        console.log('Auto-hiding controls after user interaction timeout');
-        channelOverlay.style.opacity = '0';
-        closeBtnOverlay.style.opacity = '0';
-        setTimeout(() => {
-          channelOverlay.classList.add('hidden');
-          channelOverlay.style.display = 'none';
-          closeBtnOverlay.classList.add('hidden');
-          closeBtnOverlay.style.display = 'none';
-        }, 300);
-      }, 3000);
     }
 
     function playClickSound() {
